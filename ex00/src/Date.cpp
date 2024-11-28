@@ -6,7 +6,7 @@
 /*   By: jverdu-r <jverdu-r@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/11/19 15:49:54 by jverdu-r          #+#    #+#             */
-/*   Updated: 2024/11/20 15:32:54 by jverdu-r         ###   ########.fr       */
+/*   Updated: 2024/11/28 17:06:54 by jverdu-r         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,15 +92,25 @@ bool Date::validDate(void)
 
 int Date::getDay(void) const
 {
-	return (this->_day);
+	if (this->_day)
+		return (this->_day);
+	else
+		return (0);
+
 }
 int Date::getMonth(void) const
 {
-	return (this->_month);
+	if (this->_month)
+		return (this->_month);
+	else
+		return (0);
 }
 int Date::getYear(void) const
 {
-	return (this->_year);
+	if (this->_year)
+		return (this->_year);
+	else
+		return (0);
 }
 
 std::ostream &operator<<(std::ostream &o, const Date &prt)
