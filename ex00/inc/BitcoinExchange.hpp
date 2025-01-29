@@ -1,51 +1,44 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   BitcoinExchange.hpp                                :+:      :+:    :+:   */
+/*   Bitcoinexchange.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jverdu-r <jverdu-r@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/19 15:26:34 by jverdu-r          #+#    #+#             */
-/*   Updated: 2024/11/20 16:03:00 by jverdu-r         ###   ########.fr       */
+/*   Created: 2025/01/29 16:10:18 by jverdu-r          #+#    #+#             */
+/*   Updated: 2025/01/29 16:10:21 by jverdu-r         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef BITCINEXCHANGE_HPP
-#define BITCINEXCHANGE_HPP
+#ifndef BITCOINEXCHANGE_HPP
+#define BITCOINEXCHANGE_HPP
 
 #include <iostream>
 #include <fstream>
+#include <limits>
+#include <string>
+#include <stdexcept>
+#include <sstream>
+#include <cstdlib>
 #include <map>
-#include "Date.hpp"
-
-#define DATAFILE "data.csv"
 
 class BitcoinExchange
 {
-    private:
-        std::map<Date, float> _dataBase;
+	public:
+		BitcoinExchange();
+		BitcoinExchange(const BitcoinExchange &src);
+		BitcoinExchange &operator=(const BitcoinExchange &src);
+		~BitcoinExchange();
 
-    public:
-        BitcoinExchange(void);
-        ~BitcoinExchange(void);
-        BitcoinExchange(const BitcoinExchange &origin);
-        BitcoinExchange &operator=(const BitcoinExchange &origin);
-        float searchDate(Date date) const;
+		void loadBitcoinPrice(const std::string &filename);
+		double getExchangeRate(const std::string &date) const;
+		void processInput(const std::string &line);
 
-        class CannotOpenDataFile : public std::exception
-        {
-            virtual const char* what() const throw()
-            {
-                return ("ERROR: Cannot open data file");
-            }
-        };
-
-        class DateTooEarly : public std::exception
-        {
-            virtual const char* what() const throw()
-            {
-                return ("ERROR: Date too early");
-            }
-        };
+	private:
+		std::map<std::string, double> _bitcoinPrices;
+		bool isDateValid(const std::string &date);
+		bool isValueValid(const std::string &value);
+		static void trim(std::string &str);
 };
+
 #endif

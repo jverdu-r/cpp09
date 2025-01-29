@@ -5,49 +5,172 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jverdu-r <jverdu-r@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/20 14:53:10 by jverdu-r          #+#    #+#             */
-/*   Updated: 2024/11/20 16:01:30 by jverdu-r         ###   ########.fr       */
+/*   Created: 2025/01/29 16:10:23 by jverdu-r          #+#    #+#             */
+/*   Updated: 2025/01/29 16:11:50 by jverdu-r         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/BitcoinExchange.hpp"
 
-BitcoinExchange::BitcoinExchange(void)
-{
-	std::ifstream file(DATAFILE);
-	std::string line;
-	std::string value;
-	Date auxDate;
-	float auxValue;
+// Constructor, Destructor, Copy Constructor, Assignment Operator
 
-	if (!file.is_open())
-		throw (CannotOpenDataFile());
-	std::getline(file, line);
-	while (!file.eof())
+BitcoinExchange::BitcoinExchange() {}
+
+BitcoinExchange::~BitcoinExchange()
+{
+}
+
+BitcoinExchange::BitcoinExchange(const BitcoinExchange &src)
+{
+	*this = src;
+}
+
+BitcoinExchange &BitcoinExchange::operator=(const BitcoinExchange &src)
+{
+	if (this != &src)
 	{
-		std::getline(file, line);
-		if (line == "")
-			break;
-		auxDate = Date(line.substr(0, line.find_first_of(',')));
-		value = line.substr(0, line.find_first_of(',') + 1);
-		auxValue = atof(value.c_str());
-		this->_dataBase[auxDate] = auxValue;
+		_bitcoinPrices = src._bitcoinPrices;
+	}
+	return *this;
+}
+
+// Load Bitcoin Price, It will load the bitcoin price from the file
+void BitcoinExchange::loadBitcoinPrice(const std::string &filename)
+{
+	std::ifstream file(filename.c_str());
+	if (!file.is_open())
+	{
+		throw std::runtime_error("Cannot open file");
+	}
+
+	std::string line;
+	std::getline(file, line);
+
+	while (std::getline(file, line))
+	{
+		std::istringstream iss(line);
+		std::string date, valueStr;
+		std::getline(iss, date, ',');
+		std::getline(iss, valueStr);
+
+		trim(date);
+		trim(valueStr);
+
+		double value = std::atof(valueStr.c_str());
+		_bitcoinPrices[date] = value;
+	}
+	file.close();
+}
+
+// Get Exchange Rate, It will return the exchange rate of the given date
+double BitcoinExchange::getExchangeRate(const std::string &date) const
+{
+	std::map<std::string, double>::const_iterator it = _bitcoinPrices.lower_bound(date);
+
+	if (it != _bitcoinPrices.end() && it->first == date)
+	{
+		return it->second;
+	}
+
+	if (it == _bitcoinPrices.begin())
+	{
+		return it->second;
+	}
+
+	--it;
+	return it->second;
+}
+
+// Process Input, It will process the input and print the output.
+void BitcoinExchange::processInput(const std::string &line)
+{
+	std::istringstream iss(line);
+	std::string date, valueStr;
+	std::getline(iss, date, '|');
+	std::getline(iss, valueStr);
+
+	trim(date);
+	trim(valueStr);
+
+	if (!isDateValid(date))
+	{
+		std::cerr << "Error: bad input => " << date << std::endl;
+		return;
+	}
+
+	double value = std::atof(valueStr.c_str());
+	if (value > 1000)
+	{
+		std::cerr << "Error: too large of a number." << std::endl;
+		return;
+	}
+	if (!isValueValid(valueStr))
+	{
+
+		std::cerr << "Error: not a positive number." << std::endl;
+		return;
+	}
+
+	try
+	{
+		double exchangeRate = getExchangeRate(date);
+		std::cout << date << " => " << value << " = " << value * exchangeRate << std::endl;
+	}
+	catch (const std::runtime_error &e)
+	{
+		std::cerr << e.what() << std::endl;
 	}
 }
-BitcoinExchange::~BitcoinExchange(void) {}
+// Is Date Valid, It will check if the date is valid or not
+bool BitcoinExchange::isDateValid(const std::string &date)
+{
+	if (date.length() != 10 || date[4] != '-' || date[7] != '-')
+	{
+		return false;
+	}
+	for (int a = 0; a < 10; ++a)
+	{
+		if (a == 4 || a == 7)
+			continue;
+		if (!std::isdigit(date[a]))
+			return false;
+	}
+	int year = std::atoi(date.substr(0, 4).c_str());
+	int month = std::atoi(date.substr(5, 2).c_str());
+	int day = std::atoi(date.substr(8, 2).c_str());
+	if (year < 0 || month < 1 || month > 12 || day < 1)
+	{
+		return false;
+	}
+	int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+	{
+		daysInMonth[1] = 29;
+	}
+	if (day > daysInMonth[month - 1])
+	{
+		return false;
+	}
+	return true;
+}
 
-BitcoinExchange::BitcoinExchange(const BitcoinExchange &origin)
+// Is Value Valid, It will check if the value is valid or not
+bool BitcoinExchange::isValueValid(const std::string &value)
 {
-	*this = origin;
+	char *end;
+	double val = std::strtod(value.c_str(), &end);
+	return (*end == '\0' && val >= 0 && val <= 1000);
 }
-BitcoinExchange& BitcoinExchange::operator=(const BitcoinExchange &origin)
+
+// Trim, It will remove the leading and trailing spaces from the string
+void BitcoinExchange::trim(std::string &str)
 {
-	this->_dataBase = origin._dataBase;
-	return (*this);
-}
-float BitcoinExchange::searchDate(Date date) const
-{
-	if (this->_dataBase.lower_bound(date) == this->_dataBase.end())
-		throw (DateTooEarly());
-	return (this->_dataBase.lower_bound(date))->second;
+	size_t first = str.find_first_not_of(' ');
+	if (first == std::string::npos)
+	{
+		str.clear();
+		return;
+	}
+	size_t last = str.find_last_not_of(' ');
+	str = str.substr(first, last - first + 1);
 }
